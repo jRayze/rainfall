@@ -1,0 +1,44 @@
+Dans cet exercice nous avons un exercice similaire au précédent cependant nous avons 
+l'instruction exit qui nous fait quitter le programme a la suite du printf.
+
+Notre objectif est donc de faire en sorte d'appeler la fonction lors de la fonction exit 
+grace au printf.
+
+Pour ce faire nous alons examiner la fonction exit :
+
+    0x080483d0 <+0>:     jmp    DWORD PTR ds:0x8049838
+    0x080483d6 <+6>:     push   0x28
+    0x080483db <+11>:    jmp    0x8048370
+
+On peut voir que la fonction exit fait un jump à l'adresse 0x08049838.
+
+A cette adresse est stocké l'adresse 0x080483d6 et c'est donc celle ci que nous devons 
+remplacer et ce par la fonction o.
+
+Pour se faire nous allons une fois de plus exploiter le %n de la fonction printf.
+
+La fonction exit est appelée après le printf. En dessasemblant la fonction exit on remarque
+que la première instruction est un jump qui va executer le code situé à l'adresse appelée 
+(0x8049838).
+
+On peut donc rediriger l'execution vers la fonction o en remplacant l'instruction à cette 
+adresse par celle de la fonction o en utilisant le printf.
+
+Adresse de l'adresse à remplacer : 0x8049838 
+Adrese à remplacer : 0x080483d6
+Adresse de o : 0x080484a4
+
+Comme les 2 premiers octets sont égaux (0x0804) il faut juste remplacer 83d6 par 84a4, 
+ce qui vaut 33956 en décimal.
+
+Il faut donc préparer le buffer:
+
+    adresse de la mémoire qu'on veut changer + %(33956 - 4)x + %4$hn 
+    (le x permet de )
+    (le h permet de modifier que la premiere moitié des octets)
+
+    \x38\x98\x04\x08 + 33952 + %4$hn
+
+    python -c 'print "\x38\x98\x04\x08" + "%33952d" + "%4$hn"'
+
+    
