@@ -1,0 +1,45 @@
+Dans cet exercice on peut constater qu'il y a une variable qui 
+correspond à un pointeur sur fonction.
+
+Egalement 2 malloc et un appel a strcpy.
+
+El lisant la doc on peut voir que strcpy est exploitable 
+si l'on dépasse la taille prévue dans le buffer.
+
+Il nous faut donc créer un shellcode qui dépasse la taille du buffer
+à savoir 64 octets.
+
+Il nous faut également remplacer l'adresse de la variable pointeur sur fonction
+qui contient l'adrese de la fonction m par l'adresse de la fonction n.
+
+Pour ce faire nous devons trouver l'emplacement de la la variable, celle ci est contenue dans eax
+(comme tout les retour de fonction) apres l'appel du malloc.
+
+On trouve cette adresse : 
+    0x804a050
+
+Il nous faut aussi trouver l'adresse de str :
+    0x804a008
+
+Et l'adresse de la fonction n :
+    0x08048454
+
+En faisant la différence entre les 2 mallocs on peut trouver le nombre 
+de caractère qu'il faudra ajouter pour acceder à l'adresse du 
+pointeur sur fonction en partant de l'adresse du buffer en argument 
+de strcpy.
+
+0x804a050 - x804a008 = 72
+
+Il suffit donc de remplir cette plage de donnée et d'y ajouter 
+l'adresse de n afin d'overwrite l'adresse de m dans le pointeur 
+sur fonction.
+
+Notre shellcode correspond donc à :
+    "A * 72" + "\x54\x84\x04\x08"
+
+    python -c 'print "A" * 72 + "\x54\x84\x04\x08"'
+
+Vue que tu nous avons besoin de passer cela en argument il ne faut pas 
+oublier d'utiliser $() pour executer le code et l'envoyer en argument.
+
